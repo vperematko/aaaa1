@@ -31,11 +31,11 @@ class GroceryStore:
     """A grocery store.
 
     === Attributes ===
-    _regular_count:
-    _express_count:
-    _self_serve_count:
-    _line_capacity:
-    _line_list:
+    _regular_count: How many regular lines are open.
+    _express_count: How many express lines are open.
+    _self_serve_count: How many self-serve lines are open.
+    _line_capacity: maximum amount of people allowed in each line
+    _line_list: list of all the lines open, following the same order as above.
 
     === Representation Invariant ===
     """
@@ -103,7 +103,6 @@ class GroceryStore:
             return -1
         else:
             return i
-
 
     def line_is_ready(self, line_number: int) -> bool:
         """Return True iff checkout line <line_number> is ready to start a
@@ -203,6 +202,15 @@ class Customer:
             total += item.get_time()
         return total
 
+    def get_items(self) -> List[Item]:
+        """Return a list of items for this customer
+
+        """
+        result = []
+        for item in self._items:
+            result.append(item)
+        return result
+
 
 class Item:
     """A class to represent an item to be checked out.
@@ -238,8 +246,6 @@ class Item:
         return self._time
 
 
-# TODO: Complete the CheckoutLine class and methods according to the docstrings
-# Do not add any new attributes or methods (public or private) to this class.
 class CheckoutLine:
     """A checkout line in a grocery store.
 
@@ -259,10 +265,10 @@ class CheckoutLine:
     is_open: bool
     queue: List[Customer]
 
-    def __init__(self, capacity: int) -> None:
+    def __init__(self, capacity: int, is_open: True, queue: []) -> None:
         """Initialize an open and empty CheckoutLine.
 
-        >>> line = CheckoutLine(1)
+        >>> line = CheckoutLine(1, True, [])
         >>> line.capacity
         1
         >>> line.is_open
@@ -271,8 +277,8 @@ class CheckoutLine:
         []
         """
         self.capacity = capacity
-        self.is_open = True
-        self.queue = []
+        self.is_open = is_open
+        self.queue = queue
 
     def __len__(self) -> int:
         """Return the size of this CheckoutLine.
@@ -326,13 +332,17 @@ class CheckoutLine:
         The last person in line will join another queue (first) as the line
         closes, and the rest of the people will join each second after.
         """
-
-
+        i = 0
+        result = []
+        reverse_queue = self.queue[::-1]
+        while i != (len(self.queue) - 1):
+            to_move = reverse_queue.pop(i)
+            result.append(to_move)
+            i += 1
+        return result
 
 
 # TODO: implement the following subclasses of CheckoutLine
-# Only implement those methods that cannot be used exactly as inherited
-# from the superclass.
 # You may add private attributes and helper methods, but do not change the
 # public interface of the subclasses.
 # Write docstrings for all methods you write, and document your attributes
@@ -344,16 +354,39 @@ class RegularLine(CheckoutLine):
     Any customer can join the line, if there is room.
     The time required to checkout is equal to the total time required
     for items the customer has.
+
+
     """
+    #expand docstring
+
+    def __init__(self, capacity: int, is_open: True, queue: []) -> None:
+        """Initialize an open and empty RegularLine .
+
+        >>> pre_line = CheckoutLine(1, True, [])
+        >>> line = RegularLine(pre_line) #Rewrite this doctest
+        >>> line.capacity
+        1
+        >>> line.is_open
+        True
+        >>> line.queue
+        []
+        """
+        CheckoutLine.__init__(self, capacity, is_open, queue)
+
     def start_checkout(self) -> int:
         """Checkout the next customer in this CheckoutLine.
 
         Return the time it will take to checkout the next customer.
         Assume that there is a customer in line when this is called.
-
         """
-        pass
-
+        total_time = 0
+        customer = self.queue[0]
+        items = customer.get_items()
+        if customer is not None:
+            for item in items:
+                time = item.get_time()
+                total_time += time
+        return total_time
 
 
 class ExpressLine(CheckoutLine):
@@ -363,9 +396,26 @@ class ExpressLine(CheckoutLine):
     and there is room. The time required to checkout is equal to the
     total time required for items the customer has.
     """
+    def __init__(self, capacity: int, is_open: True, queue: []) -> None:
+        """Initialize an open and empty ExpressLine .
+
+       >>> pre_line = CheckoutLine(1, True, [])
+        >>> line = ExpressLine(pre_line) #Rewrite this doctest
+        >>> line.capacity
+        1
+        >>> line.is_open
+        True
+        >>> line.queue
+        []
+        """
+        CheckoutLine.__init__(self, capacity, is_open, queue)
+
     def can_accept(self, customer: Customer) -> bool:
         """Return True iff this CheckoutLine can accept <customer>.
         Assume that there is a customer in line when this is called.
+
+        This method overrides CheckoutLine.can_accept due to the additional max
+        item parameter required.
 
         """
         result = True
@@ -381,7 +431,14 @@ class ExpressLine(CheckoutLine):
         Assume that there is a customer in line when this is called.
 
         """
-        pass
+        total_time = 0
+        customer = self.queue[0]
+        items = customer.get_items()
+        if customer is not None:
+            for item in items:
+                time = item.get_time()
+                total_time += time
+        return total_time
 
 
 class SelfServeLine(CheckoutLine):
@@ -391,12 +448,35 @@ class SelfServeLine(CheckoutLine):
     The time required to checkout is equal to twice the total time
     required for items the customer has.
     """
+
+    def __init__(self, capacity: int, is_open: True, queue: []) -> None:
+        """Initialize an open and empty Self Serve Line.
+
+        >>> pre_line = CheckoutLine(1, True, [])
+        >>> line = SelfServeLine(pre_line) #Rewrite this doctest
+        >>> line.capacity
+        1
+        >>> line.is_open
+        True
+        >>> line.queue
+        []
+        """
+        CheckoutLine.__init__(self, capacity, is_open, queue)
+
+
     def start_checkout(self) -> int:
         """Checkout the next customer in this CheckoutLine.
 
         Return the time it will take to checkout the next customer.
         """
-    pass
+        total_time = 0
+        customer = self.queue[0]
+        items = customer.get_items()
+        if customer is not None:
+            for item in items:
+                time = item.get_time()
+                total_time += time
+        return total_time * 2
 
 
 if __name__ == '__main__':
