@@ -22,6 +22,7 @@ from store import RegularLine, ExpressLine, SelfServeLine
 
 # TODO: write your test functions for the checkout classes here
 
+
 if __name__ == '__main__':
     import pytest
     pytest.main(['test_checkouts.py'])

@@ -35,9 +35,13 @@ class GroceryStore:
     _express_count: How many express lines are open.
     _self_serve_count: How many self-serve lines are open.
     _line_capacity: maximum amount of people allowed in each line
-    _line_list: list of all the lines open, following the same order as above.
+    _line_list: list of all the lines open, following representation invariants
 
     === Representation Invariant ===
+    - _line_list is ordered in the following order:
+    RegularLine, ExpressLine, SelfServeLine
+    - _line_capacity is the same for all lines
+
     """
     _regular_count: int
     _express_count: int
@@ -47,13 +51,20 @@ class GroceryStore:
 
     def __init__(self, config_file: TextIO) -> None:
         """Initialize a GroceryStore from a configuration file <config_file>.
-        Format is as follows:
-        {
-        "regular_count": 0,
+        >>> f = io.StringIO(
+          "regular_count": 0,
           "express_count": 0,
           "self_serve_count": 1,
-          "line_capacity": 10
-          }
+          "line_capacity": 10)
+        >>> GroceryStore(f)
+        >>> self._regular_count == 0
+        True
+        >>> self._express_count == 0
+        True
+        >>> self._self_serve_count == 1
+        True
+        >>> self._line_capacity == 10
+        True
         """
         working = json.load(config_file)
         self._regular_count = working.get['regular_count']
@@ -294,7 +305,7 @@ class CheckoutLine:
         """Accept <customer> at the end of this CheckoutLine.
         Return True iff the customer is accepted.
 
-        >>> line = CheckoutLine(1)
+        >>> line = CheckoutLine(1, True, [])
         >>> c1 = Customer('Belinda', [Item('cheese', 3)])
         >>> c2 = Customer('Hamman', [Item('chips', 4), Item('gum', 1)])
         >>> line.accept(c1)
@@ -362,8 +373,7 @@ class RegularLine(CheckoutLine):
     def __init__(self, capacity: int, is_open: True, queue: []) -> None:
         """Initialize an open and empty RegularLine .
 
-        >>> pre_line = CheckoutLine(1, True, [])
-        >>> line = RegularLine(pre_line) #Rewrite this doctest
+        >>> line = RegularLine(1, True, []) #Rewrite this doctest
         >>> line.capacity
         1
         >>> line.is_open
@@ -371,7 +381,7 @@ class RegularLine(CheckoutLine):
         >>> line.queue
         []
         """
-        CheckoutLine.__init__(self, capacity, is_open, queue)
+        super().__init__(capacity, is_open, queue)
 
     def start_checkout(self) -> int:
         """Checkout the next customer in this CheckoutLine.
@@ -399,8 +409,7 @@ class ExpressLine(CheckoutLine):
     def __init__(self, capacity: int, is_open: True, queue: []) -> None:
         """Initialize an open and empty ExpressLine .
 
-       >>> pre_line = CheckoutLine(1, True, [])
-        >>> line = ExpressLine(pre_line) #Rewrite this doctest
+        >>> line = ExpressLine(1, True, []) #Rewrite this doctest
         >>> line.capacity
         1
         >>> line.is_open
@@ -420,7 +429,7 @@ class ExpressLine(CheckoutLine):
         """
         result = True
         if not self.is_open and (len(self.queue) < self.capacity) \
-                and (customer.num_items() < 8):
+                and (customer.num_items() < EXPRESS_LIMIT):
             result = False
         return result
 
@@ -452,8 +461,7 @@ class SelfServeLine(CheckoutLine):
     def __init__(self, capacity: int, is_open: True, queue: []) -> None:
         """Initialize an open and empty Self Serve Line.
 
-        >>> pre_line = CheckoutLine(1, True, [])
-        >>> line = SelfServeLine(pre_line) #Rewrite this doctest
+        >>> line = SelfServeLine(1, True, []) #Rewrite this doctest
         >>> line.capacity
         1
         >>> line.is_open
