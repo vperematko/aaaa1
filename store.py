@@ -22,7 +22,6 @@ Copyright (c) 2019 Jacqueline Smith
 from __future__ import annotations
 from typing import List, Optional, TextIO
 import json
-
 # Use this constant in your code
 EXPRESS_LIMIT = 7
 
@@ -41,7 +40,6 @@ class GroceryStore:
     - _line_list is ordered in the following order:
     RegularLine, ExpressLine, SelfServeLine
     - _line_capacity is the same for all lines
-
     """
     _regular_count: int
     _express_count: int
@@ -51,26 +49,23 @@ class GroceryStore:
 
     def __init__(self, config_file: TextIO) -> None:
         """Initialize a GroceryStore from a configuration file <config_file>.
-        >>> f = io.StringIO(
-          "regular_count": 0,
-          "express_count": 0,
-          "self_serve_count": 1,
-          "line_capacity": 10)
-        >>> GroceryStore(f)
-        >>> self._regular_count == 0
+        >>> import io
+        >>> config_file = io.StringIO('{"regular_count":0,"express_count":0,"self_serve_count":1,"line_capacity":10}')
+        >>> g = GroceryStore(config_file)
+        >>> g.get_info('_regular_count') == 0
         True
-        >>> self._express_count == 0
+        >>> g.get_info('_express_count') == 0
         True
-        >>> self._self_serve_count == 1
+        >>> g.get_info('_self_serve_count') == 1
         True
-        >>> self._line_capacity == 10
+        >>> g.get_info('_line_capacity') == 10
         True
         """
         working = json.load(config_file)
-        self._regular_count = working.get['regular_count']
-        self._express_count = working.get['express_count']
-        self._self_serve_count = working.get['self_serve_count']
-        self._line_capacity = working.get['line_capacity']
+        self._regular_count = working.get('regular_count')
+        self._express_count = working.get('express_count')
+        self._self_serve_count = working.get('self_serve_count')
+        self._line_capacity = working.get('line_capacity')
 
         self._line_list = []
         i = 0
@@ -84,6 +79,41 @@ class GroceryStore:
                    + self._self_serve_count):
             self._line_list.append(SelfServeLine)
             i += 1
+
+    def get_info(self, name: str) -> int:
+        """Return requested info from input file. Allows indirect access to
+        private attributes.
+        Primarily to be used in doctests and pytests
+        >>> import io
+        >>> config_file = io.StringIO('{"regular_count":0,"express_count":0,"self_serve_count":1,"line_capacity":10}')
+        >>> g = GroceryStore(config_file)
+        >>> g.get_info('_regular_count')
+        0
+        >>> g.get_info('_express_count')
+        0
+        >>> g.get_info('_self_serve_count')
+        1
+        >>> g.get_info('_line_capacity')
+        10
+        """
+
+        if name == '_regular_count':
+            return self._regular_count
+        elif name == '_express_count':
+            return self._express_count
+        elif name == '_self_serve_count':
+            return self._self_serve_count
+        elif name == '_line_capacity':
+            return self._line_capacity
+
+    def get_line_list(self) -> List:
+        """
+
+        """
+        result = []
+        for line in self._line_list:
+            result.append(line)
+        return result
 
     def enter_line(self, customer: Customer) -> int:
         """Pick a new line for <customer> to join.
@@ -101,14 +131,21 @@ class GroceryStore:
         1 (representing trying to join a line again at the next time interval.)
 
         Return -1 if there is no line available for the customer to join.
+        >>> import io
+        >>> config_file = io.StringIO('{"regular_count":0,"express_count":0,"self_serve_count":1,"line_capacity":10}')
+        >>> g = GroceryStore(config_file)
+        >>> customer = Customer('bill nye', [Item('banana', 5), Item('apple', 6)])
+        >>> g.enter_line(customer)
+        0
         """
 
-        i = 0
+        i = -1
         for line in self._line_list:
-            if (len(line.queue) <= self._line_capacity) and line.is_open \
-             and (customer.num_items() <= line.capacity):
+            if line.can_accept(line, customer):
                 line.queue.append(customer)
-            i += 1
+                break
+            else:
+                i += 1
 
         if i == len(self._line_list):
             return -1
@@ -199,7 +236,6 @@ class Customer:
         2
         """
         return len(self._items)
-
 
     def get_item_time(self) -> int:
         """Return the number of seconds it takes to check out this customer.
@@ -417,7 +453,7 @@ class ExpressLine(CheckoutLine):
         >>> line.queue
         []
         """
-        CheckoutLine.__init__(self, capacity, is_open, queue)
+        super().__init__(capacity, is_open, queue)
 
     def can_accept(self, customer: Customer) -> bool:
         """Return True iff this CheckoutLine can accept <customer>.
@@ -456,7 +492,11 @@ class SelfServeLine(CheckoutLine):
     Any customer can join the line, if there is room.
     The time required to checkout is equal to twice the total time
     required for items the customer has.
+
     """
+    capacity: int
+    is_open: bool
+    queue: List[Customer]
 
     def __init__(self, capacity: int, is_open: True, queue: []) -> None:
         """Initialize an open and empty Self Serve Line.
@@ -469,7 +509,7 @@ class SelfServeLine(CheckoutLine):
         >>> line.queue
         []
         """
-        CheckoutLine.__init__(self, capacity, is_open, queue)
+        super().__init__(capacity, is_open, queue)
 
 
     def start_checkout(self) -> int:
