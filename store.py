@@ -96,7 +96,6 @@ class GroceryStore:
         >>> g.get_info('_line_capacity')
         10
         """
-
         if name == '_regular_count':
             return self._regular_count
         elif name == '_express_count':
@@ -108,10 +107,14 @@ class GroceryStore:
         else:
             return 0
 
-
     def get_line_list(self) -> List:
-        """Return the list of lines in this
-
+        """Return the list of lines in this GroceryStore.
+        >>> import io
+        >>> config_file = io.StringIO('{"regular_count":0,"express_count":0,"self_serve_count":1,"line_capacity":10}')
+        >>> g = GroceryStore(config_file)
+        >>> result = g.get_line_list()
+        >>> len(result) == 1
+        True
         """
         result = []
         for line in self._line_list:
@@ -142,7 +145,7 @@ class GroceryStore:
         0
         """
 
-        i = -1
+        i = 0
         for line in self._line_list:
             if line.can_accept(customer):
                 line.queue.append(customer)
@@ -159,8 +162,17 @@ class GroceryStore:
         """Return True iff checkout line <line_number> is ready to start a
         checkout. Thus, line_is_ready should return True
         if and only if there is exactly one customer in line
+        >>> import io
+        >>> config_file = \
+        io.StringIO('{"regular_count":0,"express_count":0,"self_serve_count":1,"line_capacity":10}')
+        >>> g = GroceryStore(config_file)
+        >>> g.enter_line(Customer('the science guy', [Item('apple', 6)]))
+        0
+        >>> g.enter_line(Customer('bill nye', [Item('banana', 5)]))
+        0
+        >>> g.line_is_ready(0)
+        False
         """
-
         line = self._line_list[line_number]
         if len(line.queue) == 1:
             return True
@@ -169,9 +181,17 @@ class GroceryStore:
     def start_checkout(self, line_number: int) -> int:
         """Return the time it will take to check out the next customer in
         line <line_number>
+
+        >>> import io
+        >>> config_file = \
+        io.StringIO('{"regular_count":0,"express_count":0,"self_serve_count":1,"line_capacity":10}')
+        >>> g = GroceryStore(config_file)
+        >>> g.enter_line(Customer('the science guy', [Item('apple', 6)]))
+        0
+        >>> g.start_checkout(0)
+        12
         """
-        next_customer = self._line_list[line_number][0]
-        return next_customer.get_item_time()
+        return self.get_line_list()[line_number].start_checkout()
 
     def complete_checkout(self, line_number: int) -> bool:
         """Return True iff there are customers remaining to be checked out in
@@ -190,6 +210,14 @@ class GroceryStore:
     def get_first_in_line(self, line_number: int) -> Optional[Customer]:
         """Return the first customer in line <line_number>, or None if there
         are no customers in line.
+        >>> import io
+        >>> config_file = \
+         io.StringIO('{"regular_count":0,"express_count":0,"self_serve_count":1,"line_capacity":10}')
+        >>> g = GroceryStore(config_file)
+        >>> g.enter_line(Customer('the science guy', [Item('apple', 6)]))
+        0
+        >>> g.get_first_in_line(0).name == 'the science guy'
+        True
         """
         line = self._line_list[line_number]
         if len(line.queue) == 0:
@@ -198,6 +226,7 @@ class GroceryStore:
             return line.queue[0]
 
 
+# DOCSTRINGS DONE
 class Customer:
     """A grocery store customer.
 
