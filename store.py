@@ -70,14 +70,14 @@ class GroceryStore:
         self._line_list = []
         i = 0
         while i < self._regular_count:
-            self._line_list.append(RegularLine)
+            self._line_list.append(RegularLine(self._line_capacity, True, []))
             i += 1
         while i < (self._regular_count + self._express_count):
-            self._line_list.append(ExpressLine)
+            self._line_list.append(ExpressLine(self._line_capacity, True, []))
             i += 1
         while i < (self._regular_count + self._express_count
                    + self._self_serve_count):
-            self._line_list.append(SelfServeLine)
+            self._line_list.append(SelfServeLine(self._line_capacity, True, []))
             i += 1
 
     def get_info(self, name: str) -> int:
@@ -105,9 +105,12 @@ class GroceryStore:
             return self._self_serve_count
         elif name == '_line_capacity':
             return self._line_capacity
+        else:
+            return 0
+
 
     def get_line_list(self) -> List:
-        """
+        """Return the list of lines in this
 
         """
         result = []
@@ -141,7 +144,7 @@ class GroceryStore:
 
         i = -1
         for line in self._line_list:
-            if line.can_accept(line, customer):
+            if line.can_accept(customer):
                 line.queue.append(customer)
                 break
             else:
@@ -252,6 +255,15 @@ class Customer:
     def get_items(self) -> List[Item]:
         """Return a list of items for this customer
 
+        >>> c = Customer('Bo', [Item('bananas', 7), Item('cheese', 3)])
+        >>> c.get_items()[0].get_item_name()
+        'bananas'
+        >>> c.get_items()[0].get_time()
+        7
+        >>> c.get_items()[1].get_item_name()
+        'cheese'
+        >>> c.get_items()[1].get_time()
+        3
         """
         result = []
         for item in self._items:
@@ -259,6 +271,7 @@ class Customer:
         return result
 
 
+# DOCSTRINGS DONE
 class Item:
     """A class to represent an item to be checked out.
 
@@ -277,7 +290,7 @@ class Item:
         >>> item = Item('bananas', 7)
         >>> item.name
         'bananas'
-        >>> item._time
+        >>> item.get_time()
         7
         """
         self.name = name
@@ -291,6 +304,13 @@ class Item:
         7
         """
         return self._time
+
+    def get_item_name(self) -> str:
+        """
+
+        """
+        return self.name
+
 
 
 class CheckoutLine:
@@ -329,11 +349,20 @@ class CheckoutLine:
 
     def __len__(self) -> int:
         """Return the size of this CheckoutLine.
+        >>> line = CheckoutLine(10, True, [Customer('bill', []), \
+        Customer('nye', [])])
+        >>> line.__len__()
+        2
         """
         return len(self.queue)
 
     def can_accept(self, customer: Customer) -> bool:
         """Return True iff this CheckoutLine can accept <customer>.
+        >>> line = CheckoutLine(10, True, [Customer('bill', []), \
+        Customer('nye', [])])
+        >>> customer = Customer('the science guy', [Item('banana', 5)])
+        >>> line.can_accept(customer)
+        True
         """
         return self.is_open and (len(self.queue) < self.capacity)
 
@@ -368,6 +397,7 @@ class CheckoutLine:
 
         Return whether there are any remaining customers in the line.
         Customer is in the queue until they are done checking out.
+        >>>
         """
         self.queue.pop(0)
         return len(self.queue) >= 1
@@ -389,11 +419,7 @@ class CheckoutLine:
         return result
 
 
-# TODO: implement the following subclasses of CheckoutLine
-# You may add private attributes and helper methods, but do not change the
-# public interface of the subclasses.
-# Write docstrings for all methods you write, and document your attributes
-# in the class docstring.
+
 
 class RegularLine(CheckoutLine):
     """A regular CheckoutLine.
@@ -402,9 +428,19 @@ class RegularLine(CheckoutLine):
     The time required to checkout is equal to the total time required
     for items the customer has.
 
+    === Attributes ===
+    capacity: The number of customers allowed in this CheckoutLine.
+    is_open: True iff the line is open.
+    queue: Customers in this line in FIFO order.
 
+    === Representation Invariants ===
+    - Each customer in this line has not been checked out yet.
+    - The number of customers is less than or equal to capacity.
     """
-    #expand docstring
+
+    capacity: int
+    is_open: bool
+    queue: List[Customer]
 
     def __init__(self, capacity: int, is_open: True, queue: []) -> None:
         """Initialize an open and empty RegularLine .
@@ -441,6 +477,19 @@ class ExpressLine(CheckoutLine):
     Customers can only enter the line if they have fewer than 8 items,
     and there is room. The time required to checkout is equal to the
     total time required for items the customer has.
+
+    === Attributes ===
+    capacity: The number of customers allowed in this CheckoutLine.
+    is_open: True iff the line is open.
+    queue: Customers in this line in FIFO order.
+
+    === Representation Invariants ===
+    - Each customer in this line has not been checked out yet.
+    - The number of customers is less than or equal to capacity.
+
+    capacity: int
+    is_open: bool
+    queue: List[Customer]
     """
     def __init__(self, capacity: int, is_open: True, queue: []) -> None:
         """Initialize an open and empty ExpressLine .
