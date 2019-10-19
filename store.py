@@ -71,14 +71,14 @@ class GroceryStore:
         self._line_list = []
         i = 0
         while i < self._regular_count:
-            self._line_list.append(RegularLine(self._line_capacity, True, []))
+            self._line_list.append(RegularLine(self._line_capacity))
             i += 1
         while i < (self._regular_count + self._express_count):
-            self._line_list.append(ExpressLine(self._line_capacity, True, []))
+            self._line_list.append(ExpressLine(self._line_capacity))
             i += 1
         while i < (self._regular_count + self._express_count
                    + self._self_serve_count):
-            self._line_list.append(SelfServeLine(self._line_capacity, True, []))
+            self._line_list.append(SelfServeLine(self._line_capacity))
             i += 1
 
     def get_info(self, name: str) -> int:
@@ -383,10 +383,10 @@ class CheckoutLine:
     is_open: bool
     queue: List[Customer]
 
-    def __init__(self, capacity: int, is_open: True, queue: []) -> None:
+    def __init__(self, capacity: int) -> None:
         """Initialize an open and empty CheckoutLine.
 
-        >>> line = CheckoutLine(1, True, [])
+        >>> line = CheckoutLine(1)
         >>> line.capacity
         1
         >>> line.is_open
@@ -395,22 +395,22 @@ class CheckoutLine:
         []
         """
         self.capacity = capacity
-        self.is_open = is_open
-        self.queue = queue
+        self.is_open = True
+        self.queue = []
 
     def __len__(self) -> int:
         """Return the size of this CheckoutLine.
-        >>> line = CheckoutLine(10, True, [Customer('bill', []), \
-        Customer('nye', [])])
+        >>> line = CheckoutLine(10)
+        >>> line.accept(Customer('bill', []))
+        True
         >>> line.__len__()
-        2
+        1
         """
         return len(self.queue)
 
     def can_accept(self, customer: Customer) -> bool:
         """Return True iff this CheckoutLine can accept <customer>.
-        >>> line = CheckoutLine(10, True, [Customer('bill', []), \
-        Customer('nye', [])])
+        >>> line = CheckoutLine(10)
         >>> customer = Customer('the science guy', [Item('banana', 5)])
         >>> line.can_accept(customer)
         True
@@ -421,7 +421,7 @@ class CheckoutLine:
         """Accept <customer> at the end of this CheckoutLine.
         Return True iff the customer is accepted.
 
-        >>> line = CheckoutLine(1, True, [])
+        >>> line = CheckoutLine(1)
         >>> c1 = Customer('Belinda', [Item('cheese', 3)])
         >>> c2 = Customer('Hamman', [Item('chips', 4), Item('gum', 1)])
         >>> line.accept(c1)
@@ -448,7 +448,13 @@ class CheckoutLine:
 
         Return whether there are any remaining customers in the line.
         Customer is in the queue until they are done checking out.
-        >>>
+        >>> line = CheckoutLine(10)
+        >>> line.accept(Customer('bill', []))
+        True
+        >>> line.accept(Customer('nye', []))
+        True
+        >>> line.complete_checkout()
+        True
         """
         self.queue.pop(0)
         return len(self.queue) >= 1
@@ -459,6 +465,13 @@ class CheckoutLine:
         Return a list of all customers that need to be moved to another line.
         The last person in line will join another queue (first) as the line
         closes, and the rest of the people will join each second after.
+        >>> line = CheckoutLine(10)
+        >>> line.accept(Customer('bill', [Item('cheese', 3)]))
+        True
+        >>> line.accept(Customer('nye', [Item('eggs', 4)]))
+        True
+        >>> line.close()[0].name == 'nye'
+        True
         """
         i = 0
         result = []
@@ -468,8 +481,6 @@ class CheckoutLine:
             result.append(to_move)
             i += 1
         return result
-
-
 
 
 class RegularLine(CheckoutLine):
@@ -493,10 +504,10 @@ class RegularLine(CheckoutLine):
     is_open: bool
     queue: List[Customer]
 
-    def __init__(self, capacity: int, is_open: True, queue: []) -> None:
+    def __init__(self, capacity: int) -> None:
         """Initialize an open and empty RegularLine .
 
-        >>> line = RegularLine(1, True, []) #Rewrite this doctest
+        >>> line = RegularLine(1) #Rewrite this doctest
         >>> line.capacity
         1
         >>> line.is_open
@@ -504,7 +515,7 @@ class RegularLine(CheckoutLine):
         >>> line.queue
         []
         """
-        super().__init__(capacity, is_open, queue)
+        super().__init__(capacity)
 
     def start_checkout(self) -> int:
         """Checkout the next customer in this CheckoutLine.
@@ -512,9 +523,11 @@ class RegularLine(CheckoutLine):
         Return the time it will take to checkout the next customer.
         Assume that there is a customer in line when this is called.
 
-        #>>> reg = RegularLine(10, True, [Customer('the', [Item('apple', 6)]))
-        #>>> reg.start_checkout()
-        6
+        >>> line = RegularLine(10)
+        >>> line.accept(Customer('bill', [Item('cheese', 3)]))
+        True
+        >>> line.start_checkout()
+        3
         """
         total_time = 0
         customer = self.queue[0]
@@ -546,10 +559,10 @@ class ExpressLine(CheckoutLine):
     is_open: bool
     queue: List[Customer]
     """
-    def __init__(self, capacity: int, is_open: True, queue: []) -> None:
+    def __init__(self, capacity: int) -> None:
         """Initialize an open and empty ExpressLine .
 
-        >>> line = ExpressLine(1, True, []) #Rewrite this doctest
+        >>> line = ExpressLine(1) #Rewrite this doctest
         >>> line.capacity
         1
         >>> line.is_open
@@ -557,7 +570,7 @@ class ExpressLine(CheckoutLine):
         >>> line.queue
         []
         """
-        super().__init__(capacity, is_open, queue)
+        super().__init__(capacity)
 
     def can_accept(self, customer: Customer) -> bool:
         """Return True iff this CheckoutLine can accept <customer>.
@@ -565,7 +578,10 @@ class ExpressLine(CheckoutLine):
 
         This method overrides CheckoutLine.can_accept due to the additional max
         item parameter required.
-
+        >>> line = ExpressLine(10)
+        >>> customer = Customer('the science guy', [Item('banana', 5)])
+        >>> line.can_accept(customer)
+        True
         """
         result = True
         if not self.is_open and (len(self.queue) < self.capacity) \
@@ -578,7 +594,13 @@ class ExpressLine(CheckoutLine):
 
         Return the time it will take to checkout the next customer.
         Assume that there is a customer in line when this is called.
-
+        >>> line = ExpressLine(10)
+        >>> line.accept(Customer('bill', [Item('cheese', 3)]))
+        True
+        >>> line.accept(Customer('nye', [Item('eggs', 4)]))
+        True
+        >>> line.start_checkout()
+        3
         """
         total_time = 0
         customer = self.queue[0]
@@ -602,10 +624,10 @@ class SelfServeLine(CheckoutLine):
     is_open: bool
     queue: List[Customer]
 
-    def __init__(self, capacity: int, is_open: True, queue: []) -> None:
+    def __init__(self, capacity: int) -> None:
         """Initialize an open and empty Self Serve Line.
 
-        >>> line = SelfServeLine(1, True, []) #Rewrite this doctest
+        >>> line = SelfServeLine(1) #Rewrite this doctest
         >>> line.capacity
         1
         >>> line.is_open
@@ -613,13 +635,19 @@ class SelfServeLine(CheckoutLine):
         >>> line.queue
         []
         """
-        super().__init__(capacity, is_open, queue)
-
+        super().__init__(capacity)
 
     def start_checkout(self) -> int:
         """Checkout the next customer in this CheckoutLine.
 
         Return the time it will take to checkout the next customer.
+        >>> line = SelfServeLine(10)
+        >>> line.accept(Customer('bill', [Item('cheese', 3)]))
+        True
+        >>> line.accept(Customer('nye', [Item('eggs', 4)]))
+        True
+        >>> line.start_checkout()
+        6
         """
         total_time = 0
         customer = self.queue[0]
