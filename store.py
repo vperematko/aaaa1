@@ -51,9 +51,9 @@ class GroceryStore:
     def __init__(self, config_file: TextIO) -> None:
         """Initialize a GroceryStore from a configuration file <config_file>.
         >>> import io
-        >>> config_file = io.StringIO('{"regular_count":0,"express_count":0,"self_serve_count":1,"line_capacity":10}')
+        >>> config_file = io.StringIO('{"regular_count":3,"express_count":0,"self_serve_count":1,"line_capacity":10}')
         >>> g = GroceryStore(config_file)
-        >>> g.get_info('_regular_count') == 0
+        >>> g.get_info('_regular_count') == 3
         True
         >>> g.get_info('_express_count') == 0
         True
@@ -69,6 +69,17 @@ class GroceryStore:
         self._line_capacity = working.get('line_capacity')
 
         self._line_list = []
+        # count_one = self._regular_count
+        # count_two = self._express_count
+        # count_three = self._self_serve_count
+        #
+        # for num in range(count_one):
+        #     self._line_list.append(RegularLine(self._line_capacity))
+        # for num in range(count_two):
+        #     self._line_list.append(ExpressLine(self._line_capacity))
+        # for num in range(count_three):
+        #     self._line_list.append(SelfServeLine(self._line_capacity))
+
         i = 0
         while i < self._regular_count:
             self._line_list.append(RegularLine(self._line_capacity))
@@ -86,10 +97,10 @@ class GroceryStore:
         private attributes.
         Primarily to be used in doctests and pytests
         >>> import io
-        >>> config_file = io.StringIO('{"regular_count":0,"express_count":0,"self_serve_count":1,"line_capacity":10}')
+        >>> config_file = io.StringIO('{"regular_count":3,"express_count":0,"self_serve_count":1,"line_capacity":10}')
         >>> g = GroceryStore(config_file)
         >>> g.get_info('_regular_count')
-        0
+        3
         >>> g.get_info('_express_count')
         0
         >>> g.get_info('_self_serve_count')
@@ -117,10 +128,7 @@ class GroceryStore:
         >>> len(result) == 1
         True
         """
-        result = []
-        for line in self._line_list:
-            result.append(line)
-        return result
+        return self._line_list
 
     def enter_line(self, customer: Customer) -> int:
         """Pick a new line for <customer> to join.
@@ -139,25 +147,37 @@ class GroceryStore:
 
         Return -1 if there is no line available for the customer to join.
         >>> import io
-        >>> config_file = io.StringIO('{"regular_count":0,"express_count":0,"self_serve_count":1,"line_capacity":10}')
+        >>> config_file =  \
+        io.StringIO('{"regular_count":1,"express_count":0,"self_serve_count":1,"line_capacity":1}')
         >>> g = GroceryStore(config_file)
-        >>> customer = Customer('bill nye', [Item('banana', 5), Item('apple', 6)])
-        >>> g.enter_line(customer)
+        >>> customer_one = Customer('bill', [Item('banana', 5)])
+        >>> customer_two = Customer('nye', [Item('apple', 6)])
+        >>> customer_three = Customer('the science guy', [Item('apple', 6)])
+        >>> g.enter_line(customer_one)
         0
+        >>> g.enter_line(customer_two)
+        1
+        >>> g.enter_line(customer_three)
+        -1
         """
-
-        i = 0
-        for line in self._line_list:
+        potential_lines = []
+        for line in self.get_line_list():
             if line.can_accept(customer):
-                line.queue.append(customer)
-                break
-            else:
-                i += 1
+                potential_lines.append(line)
 
-        if i == len(self._line_list):
+        if len(potential_lines) == 0:
             return -1
         else:
-            return i
+            i = 0
+            lowest_index = 0
+            lowest_queue = 200000000
+            for line in potential_lines:
+                queue_length = len(line.queue)
+                if queue_length < lowest_queue:
+                    lowest_queue = queue_length
+                    lowest_index = i
+                i += 1
+            return lowest_index
 
     def line_is_ready(self, line_number: int) -> bool:
         """Return True iff checkout line <line_number> is ready to start a
@@ -175,9 +195,7 @@ class GroceryStore:
         False
         """
         line = self._line_list[line_number]
-        if len(line.queue) == 1:
-            return True
-        return False
+        return len(line.queue) == 1
 
     def start_checkout(self, line_number: int) -> int:
         """Return the time it will take to check out the next customer in
@@ -280,7 +298,6 @@ class Customer:
         self.arrival_time = -1
         self._items = items
 
-
     def num_items(self) -> int:
         """Return the number of items this customer has.
 
@@ -315,10 +332,7 @@ class Customer:
         >>> c.get_items()[1].get_time()
         3
         """
-        result = []
-        for item in self._items:
-            result.append(item)
-        return result
+        return self._items
 
 
 # DOCSTRINGS DONE
@@ -465,6 +479,7 @@ class CheckoutLine:
         Return a list of all customers that need to be moved to another line.
         The last person in line will join another queue (first) as the line
         closes, and the rest of the people will join each second after.
+
         >>> line = CheckoutLine(10)
         >>> line.accept(Customer('bill', [Item('cheese', 3)]))
         True
@@ -482,6 +497,8 @@ class CheckoutLine:
             i += 1
         return result
 
+        # logically trace through
+        # consider using for
 
 class RegularLine(CheckoutLine):
     """A regular CheckoutLine.
@@ -583,11 +600,9 @@ class ExpressLine(CheckoutLine):
         >>> line.can_accept(customer)
         True
         """
-        result = True
-        if not self.is_open and (len(self.queue) < self.capacity) \
-                and (customer.num_items() < EXPRESS_LIMIT):
-            result = False
-        return result
+        return self.is_open and \
+                (len(self.queue) < self.capacity) and \
+                (customer.num_items() < EXPRESS_LIMIT)
 
     def start_checkout(self) -> int:
         """Checkout the next customer in this CheckoutLine.
