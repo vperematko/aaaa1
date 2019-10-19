@@ -26,6 +26,7 @@ import json
 EXPRESS_LIMIT = 7
 
 
+# DOCSTRINGS DONE
 class GroceryStore:
     """A grocery store.
 
@@ -196,6 +197,14 @@ class GroceryStore:
     def complete_checkout(self, line_number: int) -> bool:
         """Return True iff there are customers remaining to be checked out in
         line <line_number>
+        >>> import io
+        >>> config_file = \
+        io.StringIO('{"regular_count":0,"express_count":0,"self_serve_count":1,"line_capacity":10}')
+        >>> g = GroceryStore(config_file)
+        >>> g.enter_line(Customer('the science guy', [Item('apple', 6)]))
+        0
+        >>> g.complete_checkout(0)
+        True
         """
         line = self._line_list[line_number]
         return len(line.queue) >= 1
@@ -203,9 +212,21 @@ class GroceryStore:
     def close_line(self, line_number: int) -> List[Customer]:
         """Close checkout line <line_number> and return the customers from
         that line who are still waiting to be checked out.
+        >>> import io
+        >>> config_file = \
+        io.StringIO('{"regular_count":0,"express_count":0,"self_serve_count":1,"line_capacity":10}')
+        >>> g = GroceryStore(config_file)
+        >>> g.enter_line(Customer('the', [Item('apple', 6)]))
+        0
+        >>> g.enter_line(Customer('science', [Item('banana', 7)]))
+        0
+        >>> g.enter_line(Customer('guy', [Item('carrot', 8)]))
+        0
+        >>> len(g.close_line(0)) == 2
+        True
         """
         line = self._line_list[line_number]
-        return line.close_line()
+        return line.close()
 
     def get_first_in_line(self, line_number: int) -> Optional[Customer]:
         """Return the first customer in line <line_number>, or None if there
@@ -335,11 +356,12 @@ class Item:
         return self._time
 
     def get_item_name(self) -> str:
-        """
-
+        """Return the name of this item
+        >>> item = Item('bananas', 7)
+        >>> item.get_item_name()
+        'bananas'
         """
         return self.name
-
 
 
 class CheckoutLine:
@@ -489,6 +511,10 @@ class RegularLine(CheckoutLine):
 
         Return the time it will take to checkout the next customer.
         Assume that there is a customer in line when this is called.
+
+        #>>> reg = RegularLine(10, True, [Customer('the', [Item('apple', 6)]))
+        #>>> reg.start_checkout()
+        6
         """
         total_time = 0
         customer = self.queue[0]
