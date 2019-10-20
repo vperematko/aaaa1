@@ -164,7 +164,33 @@ class CustomerArrival(Event):
     def __init__(self, timestamp: int, c: Customer) -> None:
         """Initialize a CustomerArrival event with <timestamp> and customer <c>.
         """
+        super().__init__(timestamp)
+        self.customer = c
 
+    def do(self, store: GroceryStore) -> List[Event]:
+        """Return a list of events representing this customer joining a line in
+        GroceryStore.
+
+        A customer cannot join a line that does not have capacity for them.
+        When there are no lines the customer can join, the “new customer”
+        event should go back into the container, and have its timestamp
+        increased by 1 (representing trying to join a line again at the
+        next time interval.)
+
+        If a new customer joins an empty checkout line, a new
+        “begin checking out” event is added with the same timestamp
+        as the join event.
+        """
+        line_entered = store.enter_line(self.customer)
+        result = []
+        marker = True
+        while marker is True:
+            if line_entered == -1:
+                self.timestamp += 1
+            else:
+                event = CustomerArrival(self.timestamp, self.customer)
+                result.append(event)
+                marker = False
 
 class CheckoutStarted(Event):
     """A customer starts the checkout process.
@@ -181,6 +207,25 @@ class CheckoutStarted(Event):
         """Initialize a CheckoutStarted event with <timestamp> and
         <line_number>.
         """
+        super().__init__(timestamp)
+        self.line_number = line_number
+
+
+    def do(self, store: GroceryStore) -> List[Event]:
+        """Return an event representing when checkout will be completed
+
+        If a customer begins checking out, a new “finish checking out” event is
+        added with the same timestamp as the “begin” timestamp, plus the
+        appropriate amount of time based on the type of checkout line and
+        the time required by the customer’s items.
+        """
+        total_waiting_time = self.timestamp #should encompass wait time of entire queue
+        for customer in store.get_line_list()[0].queue[:-1]:
+            total_waiting_time += customer.get_item_time()
+
+
+    # create timestamp when checkout will be completed
+    #emit the event
 
 
 class CheckoutCompleted(Event):
@@ -199,7 +244,20 @@ class CheckoutCompleted(Event):
         """Initialize a CheckoutCompleted event with <timestamp>, <line_number>,
         and customer <c>.
         """
+        super().__init__(timestamp)
+        self.line_number = line_number
+        self.customer = c
 
+
+    def do(self, store: GroceryStore) ->:
+        """
+        If a customer finishes checking out, the next customer in the line
+        (if there is one) gets a “begin checking out” event with the same
+        timestamp as the “finish” event.
+        Remove customer from the line
+        """
+        #remove them from the line
+        # no events to emit?
 
 class CloseLine(Event):
     """A CheckoutLine gets closed.
@@ -212,6 +270,15 @@ class CloseLine(Event):
     def __init__(self, timestamp: int, line_number: int) -> None:
         """Initialize a CloseLine event with <timestamp> and <line_number>.
         """
+
+    def do(self, store: GroceryStore):
+        """
+        If a line closes, there is one “new customer” event per customer in the
+        checkout line after the first one. The new events should be spaced 1
+        second apart, with the last customer in the line having the earliest
+        “new customer” event, which is the same as the “line close” event.
+        """
+
 
 
 # TODO: Complete this function, which creates a list of events from a file.

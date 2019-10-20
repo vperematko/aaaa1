@@ -67,30 +67,15 @@ class GroceryStore:
         self._express_count = working.get('express_count')
         self._self_serve_count = working.get('self_serve_count')
         self._line_capacity = working.get('line_capacity')
-
+        self._zz = 0
         self._line_list = []
-        # count_one = self._regular_count
-        # count_two = self._express_count
-        # count_three = self._self_serve_count
-        #
-        # for num in range(count_one):
-        #     self._line_list.append(RegularLine(self._line_capacity))
-        # for num in range(count_two):
-        #     self._line_list.append(ExpressLine(self._line_capacity))
-        # for num in range(count_three):
-        #     self._line_list.append(SelfServeLine(self._line_capacity))
 
-        i = 0
-        while i < self._regular_count:
+        for _ in range(self._regular_count):
             self._line_list.append(RegularLine(self._line_capacity))
-            i += 1
-        while i < (self._regular_count + self._express_count):
+        for _ in range(self._express_count):
             self._line_list.append(ExpressLine(self._line_capacity))
-            i += 1
-        while i < (self._regular_count + self._express_count
-                   + self._self_serve_count):
+        for _ in range(self._self_serve_count):
             self._line_list.append(SelfServeLine(self._line_capacity))
-            i += 1
 
     def get_info(self, name: str) -> int:
         """Return requested info from input file. Allows indirect access to
@@ -147,37 +132,33 @@ class GroceryStore:
 
         Return -1 if there is no line available for the customer to join.
         >>> import io
-        >>> config_file =  \
-        io.StringIO('{"regular_count":1,"express_count":0,"self_serve_count":1,"line_capacity":1}')
-        >>> g = GroceryStore(config_file)
-        >>> customer_one = Customer('bill', [Item('banana', 5)])
-        >>> customer_two = Customer('nye', [Item('apple', 6)])
-        >>> customer_three = Customer('the science guy', [Item('apple', 6)])
-        >>> g.enter_line(customer_one)
+        >>> enter_line_config_file = io.StringIO('{"regular_count":1,"express_count":0,"self_serve_count":1,"line_capacity":1}')
+        >>> g1 = GroceryStore(enter_line_config_file)
+        >>> g1._zz = 1
+        >>> customer = Customer('Bill', [Item('banana', 5)])
+        >>> g1.enter_line(customer)
         0
-        >>> g.enter_line(customer_two)
+        >>> customer = Customer('nye', [Item('apple', 6)])
+        >>> g1.enter_line(customer)
         1
-        >>> g.enter_line(customer_three)
+        >>> customer= Customer('the science guy', [Item('apple', 6)])
+        >>> g1.enter_line(customer)
         -1
         """
-        potential_lines = []
-        for line in self.get_line_list():
+        if self._zz == 1:
+            self._zz += 1
+        lowest_index = None
+        lowest_queue = 200000000
+        for i, line in enumerate(self.get_line_list()):
             if line.can_accept(customer):
-                potential_lines.append(line)
-
-        if len(potential_lines) == 0:
-            return -1
-        else:
-            i = 0
-            lowest_index = 0
-            lowest_queue = 200000000
-            for line in potential_lines:
                 queue_length = len(line.queue)
                 if queue_length < lowest_queue:
                     lowest_queue = queue_length
                     lowest_index = i
-                i += 1
-            return lowest_index
+        if lowest_index is None:
+                return -1
+        self._line_list[lowest_index].queue.append(customer)
+        return lowest_index
 
     def line_is_ready(self, line_number: int) -> bool:
         """Return True iff checkout line <line_number> is ready to start a
@@ -682,3 +663,9 @@ if __name__ == '__main__':
         'allowed-import-modules': ['__future__', 'typing', 'json',
                                    'python_ta', 'doctest'],
         'disable': ['W0613']})
+
+
+    # import io
+    # config_file = io.StringIO('{"regular_count":1,"express_count":0,"self_serve_count":1,"line_capacity":1}')
+    # g = GroceryStore(config_file)
+    # customer_one = Customer('bill', [Item('banana', 5)])
