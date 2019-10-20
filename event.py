@@ -191,6 +191,7 @@ class CustomerArrival(Event):
                 event = CustomerArrival(self.timestamp, self.customer)
                 result.append(event)
                 marker = False
+        return result
 
 class CheckoutStarted(Event):
     """A customer starts the checkout process.
@@ -222,6 +223,8 @@ class CheckoutStarted(Event):
         total_waiting_time = self.timestamp #should encompass wait time of entire queue
         for customer in store.get_line_list()[0].queue[:-1]:
             total_waiting_time += customer.get_item_time()
+
+        event = CheckoutStarted(total_waiting_time, self.line_number)
 
 
     # create timestamp when checkout will be completed
